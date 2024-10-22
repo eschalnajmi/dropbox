@@ -2,7 +2,7 @@ import os
 import socket
 import hashlib
 import sys
-
+import math
 def getdir():
     '''
     Gets the source directory path from the user, if no path entered it returns the current working directory.
@@ -43,7 +43,8 @@ def sendfiles(newfiles, source):
             contents = f"\0"
 
         if sys.getsizeof(contents) > 4096:
-            iterations = sys.getsizeof(contents)//4096 + 1
+            iterations = math.ceil(sys.getsizeof(contents)/4096)
+            print(f"File {f} has {iterations} iterations")
 
         client.send(f"{iterations}".encode())
         server_msg = client.recv(4096).decode()
