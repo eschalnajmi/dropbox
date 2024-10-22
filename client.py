@@ -13,6 +13,9 @@ def getdir():
         os.chdir("../")
         return source
     
+    if not(os.path.exists(sys.argv[1])):
+        os.mkdir(sys.argv[1])
+
     return sys.argv[1]
 
 def sendfiles(newfiles, source):
@@ -44,7 +47,6 @@ def sendfiles(newfiles, source):
 
         if sys.getsizeof(contents) > 4096:
             iterations = math.ceil(sys.getsizeof(contents)/4096)
-            print(f"File {f} has {iterations} iterations")
 
         client.send(f"{iterations}".encode())
         server_msg = client.recv(4096).decode()

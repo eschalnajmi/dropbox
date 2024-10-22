@@ -53,7 +53,6 @@ def RunServer(destination, addedfiles, client, addr):
     
         contents = ""
         for i in range(iterations):
-            print(f"iteration {i}")
             recvcontents = client.recv(4096).decode()
             if recvcontents != f"\0":
                 contents += recvcontents
