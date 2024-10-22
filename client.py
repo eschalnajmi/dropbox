@@ -9,9 +9,8 @@ def getdir():
     :return: source directory path
     '''
     if len(sys.argv) < 2:
-        source = os.getcwd()
-        os.chdir("../")
-        return source
+        print("Please provide a source directory path.")
+        exit(1)
     
     if not(os.path.exists(sys.argv[1])):
         os.mkdir(sys.argv[1])
@@ -113,8 +112,6 @@ def getfiles(source):
         allfilenames+=dirpaths
 
         newfiles = [f for f in allfilenames if f not in addedfiles]
-
-        if len(newfiles)!=0: print(f"New files: {newfiles}")
 
         for i, f in enumerate(addedfiles):
             if hashlib.md5(open(os.path.join(source, f),"r").read().encode()).hexdigest() != addedcontents[i]:
