@@ -35,6 +35,11 @@ def RunServer(destination, addedfiles, client, addr):
     while True:
         filename = client.recv(4096).decode()
         if filename == "": break
+        if filename[0:3] == "rm ":
+            os.remove(os.path.join(destination, filename[3:]))
+            print(f"deleted {filename[3:]}")
+            client.send("Success".encode())
+            continue
 
         if "/" in filename:
             tempdestination = destination

@@ -29,3 +29,4 @@ python client.py <source-directory>
 ## Limitations
 - Currently, if no source directory is provided the program will exit entirely.
 - I was unable to optimise data transfer by avoiding uploading the same partial files (files sharing partially the same content) multiple times. The only method I could think of to do this is to store all chunks created in an array and parse each new chunk through that to see if they are identical and if so upload the previous chunk instead. However, I think this would negatively affect my code in terms of time and space complexity, and due to time constraints I was unable to implement it.
+- Directories containing no files are not recognised due to the structure in which files are recognised.

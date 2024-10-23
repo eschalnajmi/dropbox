@@ -17,7 +17,7 @@ def getdir():
 
     return sys.argv[1]
 
-def sendfiles(newfiles, source):
+def sendfiles(removedfiles, newfiles, source):
     '''
     Sends all new files to the server.
     :param newfiles: list of new files
@@ -28,6 +28,18 @@ def sendfiles(newfiles, source):
     newcontents = [] # stores hash of new contents
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(('0.0.0.0',8080))
+
+    if len(removedfiles) > 0:
+        for f in removedfiles:
+            client.send(f"rm {f}".encode())
+            print(f"Sent remove request for {f}")
+            server_msg = client.recv(4096).decode()
+            if server_msg != "Success":
+                print(f"Error with removing file {f}")
+                return []
+
+    if len(newfiles) == 0:
+        return [],[]
 
     for f in newfiles:
         iterations = 1
@@ -113,17 +125,24 @@ def getfiles(source):
 
         newfiles = [f for f in allfilenames if f not in addedfiles]
 
+        removedfiles = [f for f in addedfiles if f not in allfilenames]
+
+        for f in removedfiles:
+            addedcontents.pop(addedfiles.index(f))
+            addedfiles.remove(f)
+
         for i, f in enumerate(addedfiles):
             if hashlib.md5(open(os.path.join(source, f),"r").read().encode()).hexdigest() != addedcontents[i]:
                 newfiles.append(f)
                 addedcontents.pop(i)
                 addedfiles.pop(i)
 
-        if len(newfiles)==0:
+        if len(newfiles)==0 and len(removedfiles)==0:
             continue
 
         try:
-            newlyaddedfiles,newcontents=sendfiles(newfiles, source)
+            print(f"removed files: {removedfiles}")
+            newlyaddedfiles,newcontents=sendfiles(removedfiles, newfiles, source)
             addedfiles+=newlyaddedfiles
             addedcontents+=newcontents
             count+=1
