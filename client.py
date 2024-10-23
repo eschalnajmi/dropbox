@@ -9,6 +9,7 @@ def getdir():
     Gets the source directory path from the user, if no path entered it returns the current working directory.
     :return: source directory path
     '''
+
     if len(sys.argv) < 2:
         source = os.getcwd()
         os.chdir("../")
@@ -31,6 +32,7 @@ def sendfiles(removedfiles, newfiles, source, parentdir):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(('0.0.0.0',8080))
 
+    # check if going up a directory
     if parentdir:
         client.send("../".encode())
         print("asked to go to parent dir")
@@ -40,6 +42,7 @@ def sendfiles(removedfiles, newfiles, source, parentdir):
             print("Error with changing directory")
             return []
 
+    # check for any removed files
     if len(removedfiles) > 0:
         for f in removedfiles:
             client.send(f"rm {f}".encode())
@@ -48,9 +51,11 @@ def sendfiles(removedfiles, newfiles, source, parentdir):
                 print(f"Error with removing file {f}")
                 return []
 
+    # check for any new files
     if len(newfiles) == 0:
         return [],[]
 
+    # send new files to server
     for f in newfiles:
         iterations = 1
 
@@ -67,7 +72,7 @@ def sendfiles(removedfiles, newfiles, source, parentdir):
             contents = f"\0"
 
         if sys.getsizeof(contents) > 4096:
-            iterations = math.ceil(sys.getsizeof(contents)/4096)
+            iterations = math.ceil(sys.getsizeof(contents)/4096) # chunking files into 4096 byte packets
 
         client.send(f"{iterations}".encode())
         server_msg = client.recv(4096).decode()
@@ -95,6 +100,8 @@ def all_directories(path):
     '''
     allfiles = []
     curpath = path
+
+    # skip files beginning with a . due to utf encoding error
     if path.split("/")[-1][0] == ".":
         return allfiles
     
@@ -129,6 +136,7 @@ def getfiles(source, parentdir):
 
     count = 0
     while True:
+        # get all files and directories within folder
         allfilenames = [f for f in os.listdir(source) if not(os.path.isdir(os.path.join(source, f)))]
         for f in os.listdir(source):
             if os.path.isdir(os.path.join(source, f)):
@@ -143,21 +151,24 @@ def getfiles(source, parentdir):
 
         removedfiles = [f for f in addedfiles if f not in allfilenames]
 
+        # remove deleted files from addedfiles array
         for f in removedfiles:
-            print(f"removing {f} from added files")
             addedcontents.pop(addedfiles.index(f))
             addedfiles.remove(f)
 
+        # check if any files have been modified
         for i, f in enumerate(addedfiles):
             if hashlib.md5(open(os.path.join(source, f),"r").read().encode()).hexdigest() != addedcontents[i]:
                 newfiles.append(f)
                 addedcontents.pop(i)
                 addedfiles.pop(i)
 
+        # check if there are new or deleted files
         if len(newfiles)==0 and len(removedfiles)==0:
             continue
 
         try:
+            # send files to server
             newlyaddedfiles,newcontents=sendfiles(removedfiles, newfiles, source, parentdir)
             if parentdir:
                 parentdir = False
@@ -171,5 +182,6 @@ def getfiles(source, parentdir):
 
 
 if __name__ == "__main__":
+    # get source directory path and send files to server
     source, parentdir = getdir()
     getfiles(source, parentdir)

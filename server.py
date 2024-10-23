@@ -15,6 +15,7 @@ def getdir():
     else:
         destination = sys.argv[1]
 
+    # create directory if it doesnt exist or get list of files already in the directory if it does
     if not(os.path.exists(destination)):
         os.mkdir(destination)
     else:
@@ -36,6 +37,7 @@ def RunServer(destination, addedfiles, client, addr):
         filename = client.recv(4096).decode()
         if filename == "": break
 
+        # checkl for going up a directory
         if filename == "../":
             shutil.rmtree(destination)
             os.chdir("../")
@@ -43,12 +45,14 @@ def RunServer(destination, addedfiles, client, addr):
             client.send("Success".encode())
             continue
 
+        # check for deleted files
         if filename[0:3] == "rm ":
             os.remove(os.path.join(destination, filename[3:]))
             print(f"deleted {filename[3:]}")
             client.send("Success".encode())
             continue
 
+        # create non existing directories
         if "/" in filename:
             tempdestination = destination
             dirs = filename.split("/")
@@ -57,10 +61,10 @@ def RunServer(destination, addedfiles, client, addr):
                 if not(os.path.exists(tempdestination)):
                     os.mkdir(tempdestination)
 
-        file = open(os.path.join(destination, filename),"w")
+        file = open(os.path.join(destination, filename),"w") # create new file or overwrite existing file
         client.send("Success".encode())
 
-        iterations = int(client.recv(4096).decode())
+        iterations = int(client.recv(4096).decode()) # check for number of chunks received per file
         client.send("Success".encode())
     
         contents = ""
@@ -72,7 +76,7 @@ def RunServer(destination, addedfiles, client, addr):
                 contents = f"\0"
                 break
         
-        file.write(contents)
+        file.write(contents) # write contents to file
         file.flush()
         file.close()
         
@@ -87,12 +91,14 @@ def connect(destination,addedfiles):
     :param destination: destination directory path
     :param addedfiles: list of files already in the directory
     '''
+    # create server socket
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(('0.0.0.0',8080))
     server.listen(5)
 
     while True:
         try:
+            # assign new thread to each new client connection
             client, addr = server.accept()
             thread = Thread(target=RunServer, args=(destination, addedfiles, client, addr))
             thread.start()
@@ -104,5 +110,6 @@ def connect(destination,addedfiles):
     thread.join()
         
 if __name__ == "__main__":
+    # get destination directory and connect to clients
     destination, addedfiles = getdir()
     connect(destination, addedfiles)
