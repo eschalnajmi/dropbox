@@ -2,6 +2,10 @@
 
 A  multi-threaded client-server network implemented in python to track a source directory and update the destination directory to contain all the same folders and files.
 
+Time spent working on this: 9-10 hours.
+
+Previous repo for commit history (doesn't work): https://github.com/eschalnajmi/Client-Server
+
 ## How to run
 
 1. Navigate to folder containing ```client.py``` and ```server.py```
@@ -22,7 +26,7 @@ python client.py <source-directory>
 ## Functionality
 - Able to update the destination folder in live time for any changes to the source folder.
 - Multiple clients are able to connect to the same server.
-- Large text files which are >4096 bytes are chunked into smaller 4096 packets and passed to the server.
+- Large text files which are >4096 bytes are chunked into smaller 4096 byte packets and passed to the server.
 - If no destination directory is provided, the server creates a directory called destination.
 - If the provided source directory does not exist, a directory with that name is created in the current working directory.
 

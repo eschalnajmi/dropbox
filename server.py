@@ -15,7 +15,7 @@ def getdir():
     else:
         destination = sys.argv[1]
 
-    # create directory if it doesnt exist or get list of files already in the directory if it does
+    # create directory if it doesn't exist or get list of files already in the directory if it does
     if not(os.path.exists(destination)):
         os.mkdir(destination)
     else:
@@ -37,7 +37,7 @@ def RunServer(destination, addedfiles, client, addr):
         filename = client.recv(4096).decode()
         if filename == "": break
 
-        # checkl for going up a directory
+        # check for going up a directory
         if filename == "../":
             shutil.rmtree(destination)
             os.chdir("../")
