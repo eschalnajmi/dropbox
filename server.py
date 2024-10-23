@@ -2,6 +2,7 @@ import os
 import socket
 import sys
 from threading import Thread
+import shutil
 
 def getdir():
     '''
@@ -16,7 +17,6 @@ def getdir():
 
     if not(os.path.exists(destination)):
         os.mkdir(destination)
-        print(f"Created directory {destination}\n\n")
     else:
         for f in os.listdir(destination):
             if not(os.path.isdir(os.path.join(destination, f))):
@@ -35,6 +35,14 @@ def RunServer(destination, addedfiles, client, addr):
     while True:
         filename = client.recv(4096).decode()
         if filename == "": break
+
+        if filename == "../":
+            shutil.rmtree(destination)
+            os.chdir("../")
+            os.mkdir(destination)
+            client.send("Success".encode())
+            continue
+
         if filename[0:3] == "rm ":
             os.remove(os.path.join(destination, filename[3:]))
             print(f"deleted {filename[3:]}")
@@ -48,7 +56,6 @@ def RunServer(destination, addedfiles, client, addr):
                 tempdestination = os.path.join(tempdestination, d)
                 if not(os.path.exists(tempdestination)):
                     os.mkdir(tempdestination)
-                    print(f"Created directory {tempdestination}\n\n")
 
         file = open(os.path.join(destination, filename),"w")
         client.send("Success".encode())

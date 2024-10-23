@@ -3,21 +3,23 @@ import socket
 import hashlib
 import sys
 import math
+
 def getdir():
     '''
     Gets the source directory path from the user, if no path entered it returns the current working directory.
     :return: source directory path
     '''
     if len(sys.argv) < 2:
-        print("Please provide a source directory path.")
-        exit(1)
+        source = os.getcwd()
+        os.chdir("../")
+        return source.split("/")[-1], True
     
     if not(os.path.exists(sys.argv[1])):
         os.mkdir(sys.argv[1])
 
-    return sys.argv[1]
+    return sys.argv[1], False
 
-def sendfiles(removedfiles, newfiles, source):
+def sendfiles(removedfiles, newfiles, source, parentdir):
     '''
     Sends all new files to the server.
     :param newfiles: list of new files
@@ -29,10 +31,18 @@ def sendfiles(removedfiles, newfiles, source):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(('0.0.0.0',8080))
 
+    if parentdir:
+        client.send("../".encode())
+        print("asked to go to parent dir")
+        server_msg = client.recv(4096).decode()
+        parentdir = False
+        if server_msg != "Success":
+            print("Error with changing directory")
+            return []
+
     if len(removedfiles) > 0:
         for f in removedfiles:
             client.send(f"rm {f}".encode())
-            print(f"Sent remove request for {f}")
             server_msg = client.recv(4096).decode()
             if server_msg != "Success":
                 print(f"Error with removing file {f}")
@@ -85,6 +95,9 @@ def all_directories(path):
     '''
     allfiles = []
     curpath = path
+    if path.split("/")[-1][0] == ".":
+        return allfiles
+    
     for d in os.listdir(path):
         if not(os.path.isdir(os.path.join(curpath, d))):
             allfiles.append(os.path.join(curpath, d))
@@ -92,7 +105,7 @@ def all_directories(path):
             allfiles+=all_directories(os.path.join(curpath, d))
     return allfiles
 
-def getfiles(source):
+def getfiles(source, parentdir):
     '''
     Gets all files from the source directory and sends any new ones to the server.
     :param source: source directory path
@@ -102,8 +115,11 @@ def getfiles(source):
     dirpaths = []
 
     for f in os.listdir(source):
-        if not(os.path.isdir(os.path.join(source, f))):
-            addedcontents.append(hashlib.md5(open(os.path.join(source, f),"r").read().encode()).hexdigest())
+        if not(os.path.isdir(os.path.join(source, f))) and f[0] != ".":
+            try:
+                addedcontents.append(hashlib.md5(open(os.path.join(source, f),"r").read().encode()).hexdigest())
+            except:
+                print(f'error with file {f}')
         else:
             dirs = all_directories(os.path.join(source,f))
             for d in dirs:
@@ -128,6 +144,7 @@ def getfiles(source):
         removedfiles = [f for f in addedfiles if f not in allfilenames]
 
         for f in removedfiles:
+            print(f"removing {f} from added files")
             addedcontents.pop(addedfiles.index(f))
             addedfiles.remove(f)
 
@@ -141,8 +158,9 @@ def getfiles(source):
             continue
 
         try:
-            print(f"removed files: {removedfiles}")
-            newlyaddedfiles,newcontents=sendfiles(removedfiles, newfiles, source)
+            newlyaddedfiles,newcontents=sendfiles(removedfiles, newfiles, source, parentdir)
+            if parentdir:
+                parentdir = False
             addedfiles+=newlyaddedfiles
             addedcontents+=newcontents
             count+=1
@@ -153,5 +171,5 @@ def getfiles(source):
 
 
 if __name__ == "__main__":
-    source = getdir()
-    getfiles(source)
+    source, parentdir = getdir()
+    getfiles(source, parentdir)
